@@ -1,6 +1,9 @@
+/* bump cache: v2 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* …el resto… */
+
 @keyframes fade-in {
     to {
       opacity: 1;
