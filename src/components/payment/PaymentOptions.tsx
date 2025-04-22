@@ -7,7 +7,7 @@ interface Props {
   email: string;
 }
 
-const PaymentOptions = ({ selectedOption, setSelectedOption, token, email }: Props) => {
+const PaymentOptions = ({ selectedOption, setSelectedOption, token}: Props) => {
   const { launchCheckout } = useEpaycoCheckout();
 
   const handlePay = () => {
@@ -15,8 +15,6 @@ const PaymentOptions = ({ selectedOption, setSelectedOption, token, email }: Pro
 
     launchCheckout({
       token,
-      email,
-      name: 'LexaGen - Documento Legal',
       price,
       description: selectedOption === 'pdf'
         ? 'Generación de documento legal (PDF)'
