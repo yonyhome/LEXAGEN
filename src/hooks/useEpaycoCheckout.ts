@@ -55,8 +55,8 @@ export function useEpaycoCheckout() {
       tax: '0',
       country: 'co',
       lang: 'es',
-      email: formData.contacto.email,
-      email_billing: formData.contacto.email,
+      email: formData.contacto,
+      email_billing: formData.contacto,
       response: `${window.location.origin}/payment-result?token=${encodeURIComponent(token)}`,
       method: 'POST',
     });
