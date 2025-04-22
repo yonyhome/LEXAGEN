@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// src/pages/TransactionResultPage.tsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CheckIcon,
@@ -9,7 +10,10 @@ import {
 import AnimatedBackground from '../components/transaction/AnimatedBackground';
 import TransactionCard from '../components/transaction/TransactionCard';
 import ConfirmExitModal from '../components/transaction/ConfirmExitModal';
-import { getTransactionStatus } from '../services/paymentService';
+import {
+  getTransactionStatus,
+  TransactionStatus,
+} from '../services/paymentService';
 
 const statusConfig = {
   success: {
@@ -18,7 +22,8 @@ const statusConfig = {
     iconBg: 'text-lime-500',
     buttonBg: 'bg-lime-600 hover:bg-lime-700',
     title: '¡Pago Completado!',
-    message: 'Tus documentos han sido generados exitosamente y están listos para descargar',
+    message:
+      'Tus documentos han sido generados exitosamente y están listos para descargar',
     showDownload: true,
     icon: CheckIcon,
   },
@@ -54,36 +59,37 @@ const statusConfig = {
   },
 };
 
-const TransactionResultPage = () => {
+const TransactionResultPage: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [transactionStatus, setTransactionStatus] = useState<keyof typeof statusConfig | null>(null);
+  const [transactionStatus, setTransactionStatus] = useState<
+    TransactionStatus['status'] | null
+  >(null);
   const [downloadUrl, setDownloadUrl] = useState('');
   const [details, setDetails] = useState<any>(null);
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token'); // ✅ Cambiado ref_payco → token
+  const token = searchParams.get('token');
 
   useEffect(() => {
-    const fetchStatus = async () => {
-      if (!token) {
-        setTransactionStatus('canceled');
-        return;
-      }
-
+    if (!token) {
+      setTransactionStatus('canceled');
+      return;
+    }
+    (async () => {
       try {
         const result = await getTransactionStatus(token);
         setTransactionStatus(result.status);
         setDetails(result.details);
-        if (result.downloadUrl) setDownloadUrl(result.downloadUrl);
+        if (result.downloadUrl) {
+          setDownloadUrl(result.downloadUrl);
+        }
       } catch (error) {
         console.error('Error verificando transacción:', error);
         setTransactionStatus('rejected');
       }
-    };
-
-    fetchStatus();
+    })();
   }, [token]);
 
   if (!transactionStatus) {
@@ -94,26 +100,18 @@ const TransactionResultPage = () => {
     );
   }
 
-  const currentConfig = statusConfig[transactionStatus];
+  // Fallback a 'rejected' si viene 'unknown'
+  const key = transactionStatus in statusConfig ? transactionStatus : 'rejected';
+  const currentConfig = statusConfig[key as keyof typeof statusConfig];
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!downloadUrl) return;
     setIsDownloading(true);
-    try {
-      window.location.href = downloadUrl;
-    } catch (error) {
-      console.error('Error al descargar:', error);
-    } finally {
-      setIsDownloading(false);
-    }
+    window.location.href = downloadUrl;
   };
 
   const handleCloseClick = () => {
-    if (transactionStatus === 'success') {
-      setShowConfirmModal(true);
-    } else {
-      navigate('/');
-    }
+    transactionStatus === 'success' ? setShowConfirmModal(true) : navigate('/');
   };
 
   return (
@@ -139,7 +137,8 @@ const TransactionResultPage = () => {
 
         {transactionStatus === 'success' && (
           <div className="mt-6 text-white text-sm max-w-md text-center opacity-80">
-            Tu privacidad es nuestra prioridad. Los documentos se eliminan después de la descarga.
+            Tu privacidad es nuestra prioridad. Los documentos se eliminan después de la
+            descarga.
           </div>
         )}
       </div>

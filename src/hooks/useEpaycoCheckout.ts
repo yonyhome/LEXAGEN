@@ -22,8 +22,6 @@ export function useEpaycoCheckout() {
 
   const launchCheckout = async ({
     token,
-    email,
-    name,
     price,
     description,
     option,
@@ -48,19 +46,18 @@ export function useEpaycoCheckout() {
 
     handler.open({
       external: true,
-      name,
-      description,
-      invoice: token,
+      name: description,               // nombre de la factura o descripción corta
+      description,                     // descripción detallada
+      invoice: token,                  // tu UUID que identificará la transacción
       currency: 'cop',
       amount: price.toFixed(0),
       tax_base: '0',
       tax: '0',
       country: 'co',
       lang: 'es',
-      email,
-      email_billing: formData.contacto, // ✅ Usamos el contacto del form como email_billing
-      response: `${window.location.origin}/payment-result?token=${token}`, // ✅ Ahora usamos el token
-      confirmation: 'https://us-central1-lexagen-e6d7f.cloudfunctions.net/confirmTransactionWebhook',
+      email: formData.contacto.email,
+      email_billing: formData.contacto.email,
+      response: `${window.location.origin}/payment-result?token=${encodeURIComponent(token)}`,
       method: 'POST',
     });
   };
