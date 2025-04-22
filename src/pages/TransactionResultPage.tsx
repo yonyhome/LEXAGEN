@@ -70,7 +70,9 @@ const TransactionResultPage: React.FC = () => {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+
+
+  const token = searchParams.get('x_id_factura') 
 
   useEffect(() => {
     if (!token) {
@@ -101,8 +103,10 @@ const TransactionResultPage: React.FC = () => {
   }
 
   // Fallback a 'rejected' si viene 'unknown'
-  const key = transactionStatus in statusConfig ? transactionStatus : 'rejected';
-  const currentConfig = statusConfig[key as keyof typeof statusConfig];
+  const key = (transactionStatus in statusConfig
+    ? transactionStatus
+    : 'rejected') as keyof typeof statusConfig;
+  const currentConfig = statusConfig[key];
 
   const handleDownload = () => {
     if (!downloadUrl) return;
@@ -111,7 +115,9 @@ const TransactionResultPage: React.FC = () => {
   };
 
   const handleCloseClick = () => {
-    transactionStatus === 'success' ? setShowConfirmModal(true) : navigate('/');
+    transactionStatus === 'success'
+      ? setShowConfirmModal(true)
+      : navigate('/');
   };
 
   return (
@@ -137,8 +143,8 @@ const TransactionResultPage: React.FC = () => {
 
         {transactionStatus === 'success' && (
           <div className="mt-6 text-white text-sm max-w-md text-center opacity-80">
-            Tu privacidad es nuestra prioridad. Los documentos se eliminan después de la
-            descarga.
+            Tu privacidad es nuestra prioridad. Los documentos se eliminan
+            después de la descarga.
           </div>
         )}
       </div>
