@@ -31,3 +31,5 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </FormContext.Provider>
   );
 };
+export { defaultData };
+
