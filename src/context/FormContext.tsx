@@ -1,35 +1,12 @@
+//src/context/FormContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-
-interface FormData {
-  contactoEntidad: string;
-  direccionEntidad: string;
-  direccion: string;
-  ciudad: any;
-  entidad: any;
-  contacto: any;
-  nombre: string;
-  identificacion: string;
-  tipoDocumento: string;
-  detalles: string;
-}
+import { FormData, defaultData } from '../types/formTypes';
 
 interface FormContextProps {
   formData: FormData;
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
 }
 
-export const defaultData: FormData = {
-  nombre: '',
-  identificacion: '',
-  tipoDocumento: '',
-  detalles: '',
-  contacto: '',
-  contactoEntidad: '',
-  direccionEntidad: '',
-  direccion: '',
-  ciudad: '',
-  entidad: ''
-};
 
 export const FormContext = createContext<FormContextProps>({
   formData: defaultData,

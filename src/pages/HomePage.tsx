@@ -54,7 +54,7 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="font-medium text-gray-800">Asistido por IA</p>
-                <p className="text-sm text-gray-600">GPT-4o-mini verifica y optimiza tu documento</p>
+                <p className="text-sm text-gray-600">GPT-4 verifica y optimiza tu documento</p>
               </div>
             </div>
             

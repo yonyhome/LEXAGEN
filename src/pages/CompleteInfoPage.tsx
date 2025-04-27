@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { FormContext } from '../context/FormContext';
-import { LoadingOverlay } from '../components/wizard/LoadingOverlay';
+import  ModernLoadingOverlay  from '../components/layout/LoadingOverlay';
 import { motion } from 'framer-motion';
 import { 
-  ExclamationCircleIcon, 
-  CheckCircleIcon, 
+  ExclamationCircleIcon,
   PencilSquareIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -34,7 +33,6 @@ const CompleteInfoPage: React.FC<Props> = ({ questions, onSubmit }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -66,25 +64,35 @@ const CompleteInfoPage: React.FC<Props> = ({ questions, onSubmit }) => {
     }
   };
 
+  // Dentro de CompleteInfoPage.tsx
   const completeAllQuestions = () => {
     setIsLoading(true);
-    
+
     setTimeout(() => {
-      const respuestas = Object.entries(answers)
-        .map(([field, value]) => `\n\n**${field}:** ${value}`)
+      // Construimos el contexto enriquecido con pregunta + respuesta
+      const enrichedContext = questions
+        .map((q, idx) => {
+          const key = `${q.field}-${idx}`;
+          const answer = answers[key]?.trim() || '';
+          return `\n\n**contexto:** ${q.question}\n**Respuesta:** ${answer}`;
+        })
         .join('');
 
-      const updatedDetails = formData.detalles + respuestas;
+      // Concatenamos al detalle original
+      const updatedDetails = formData.detalles + enrichedContext;
+
+      // Actualizamos el contexto global
       setFormData({ ...formData, detalles: updatedDetails });
       setIsComplete(true);
       setIsLoading(false);
-      
-      // Esperar un momento para mostrar la animación de completado
+
+      // Pequeña pausa para mostrar animación antes de continuar
       setTimeout(() => {
         onSubmit(updatedDetails);
       }, 1000);
     }, 1500);
   };
+
 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const currentQuestion = questions[currentQuestionIndex];
@@ -197,52 +205,15 @@ const CompleteInfoPage: React.FC<Props> = ({ questions, onSubmit }) => {
           </div>
         </motion.div>
 
-        {/* Botones secundarios */}
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={() => navigate('/')}
-            className="text-gray-500 hover:text-indigo-600 text-sm flex items-center transition-colors"
-          >
-            Cancelar y volver al inicio
-          </button>
-        </div>
       </main>
 
       <Footer />
 
       {/* Overlay de carga */}
-      {isLoading && <LoadingOverlay />}
+      {isLoading && <ModernLoadingOverlay />}
       
       {/* Animación de completado */}
-      {isComplete && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-        >
-          <motion.div 
-            initial={{ scale: 0.5 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300 }}
-            className="bg-white rounded-xl p-8 flex flex-col items-center max-w-md mx-4"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
-            >
-              <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4" />
-            </motion.div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Información completada!</h2>
-            <p className="text-gray-600 text-center mb-2">
-              Gracias por proporcionar todos los detalles necesarios.
-            </p>
-            <p className="text-gray-500 text-sm text-center">
-              Redirigiendo a la siguiente etapa...
-            </p>
-          </motion.div>
-        </motion.div>
-      )}
+      {isComplete && <ModernLoadingOverlay />}
     </div>
   );
 };

@@ -63,17 +63,17 @@ const TransactionResultPage = () => {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token'); // ✅ Cambiado ref_payco → token
+  const ref_payco = searchParams.get('ref_payco'); // ✅ Cambiado ref_payco → ref_payco
 
   useEffect(() => {
     const fetchStatus = async () => {
-      if (!token) {
+      if (!ref_payco) {
         setTransactionStatus('canceled');
         return;
       }
 
       try {
-        const result = await getTransactionStatus(token);
+        const result = await getTransactionStatus(ref_payco);
         setTransactionStatus(result.status);
         setDetails(result.details);
         if (result.downloadUrl) setDownloadUrl(result.downloadUrl);
@@ -84,7 +84,7 @@ const TransactionResultPage = () => {
     };
 
     fetchStatus();
-  }, [token]);
+  }, [ref_payco]);
 
   if (!transactionStatus) {
     return (
