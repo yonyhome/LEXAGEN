@@ -22,8 +22,8 @@ export default function Step4Detalles({
     
     if (len === 0) {
       setError('Este campo es obligatorio.');
-    } else if (len < 50) {
-      setError(`Por favor ingresa al menos 50 caracteres (faltan ${50 - len}).`);
+    } else if (len < 100) {
+      setError(`Por favor ingresa al menos 100 caracteres (faltan ${50 - len}).`);
     } else {
       setError('');
     }

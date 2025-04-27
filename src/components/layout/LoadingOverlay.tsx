@@ -12,8 +12,11 @@ export default function ModernLoadingOverlay() {
   ];
 
   useEffect(() => {
+    let currentIndex = 0;
+
     const interval = setInterval(() => {
-      setLoadingText(loadingPhrases[Math.floor(Math.random() * loadingPhrases.length)]);
+      currentIndex = (currentIndex + 1) % loadingPhrases.length; // Avanza al siguiente índice
+      setLoadingText(loadingPhrases[currentIndex]);
     }, 2000);
     
     return () => clearInterval(interval);

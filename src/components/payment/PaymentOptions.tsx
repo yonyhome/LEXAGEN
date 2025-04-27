@@ -1,8 +1,8 @@
-// src/components/payment/PaymentOptions.tsx
 import { useState } from 'react';
-import { useEpaycoCheckout} from '../../hooks/useEpaycoCheckout';
+import { useEpaycoCheckout } from '../../hooks/useEpaycoCheckout';
 import PaymentProcessingOverlay from '../layout/PaymentProcessingOverlay';
 import { CheckoutParams } from '../../types/checkoutTypes';
+
 interface Props {
   selectedOption: 'pdf' | 'pdf-word';
   setSelectedOption: (value: 'pdf' | 'pdf-word') => void;
@@ -49,7 +49,6 @@ export default function PaymentOptions({
 
   const handlePay = () => {
     const chosen = options.find(o => o.id === selectedOption)!;
-
     const payload: CheckoutParams = {
       token,
       email,
@@ -59,11 +58,10 @@ export default function PaymentOptions({
         chosen.id === 'pdf'
           ? 'Generación de documento legal (PDF)'
           : 'Generación de documento legal (PDF + Word)',
-      option: chosen.id,  // correcto: 'pdf' | 'pdf-word'
+      option: chosen.id,
     };
 
     console.log('Iniciando pago con payload:', payload);
-
     setIsProcessing(true);
     launchCheckout(payload);
   };
