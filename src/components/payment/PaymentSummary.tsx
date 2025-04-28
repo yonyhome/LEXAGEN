@@ -8,6 +8,8 @@ interface PaymentSummaryProps {
   documentToken: string;
 }
 
+const LOCK_DURATION_MS = 30_000; // 30 segundos
+
 const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   formData,
   previewUrl,
@@ -16,8 +18,8 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [locked, setLocked] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(10);
+  const [_locked, _setLocked] = useState(false);
+  const [_secondsLeft, _setSecondsLeft] = useState(30);
 
   // Simula la carga del PDF
   useEffect(() => {
@@ -28,37 +30,43 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
     }
   }, [previewUrl]);
 
-  // Control de bloqueo por token
+  // Control de bloqueo por token (30 segundos)
   useEffect(() => {
     if (!previewUrl) return;
+
     const now = Date.now();
     const storedToken = localStorage.getItem('previewToken');
     const storedLockTime = localStorage.getItem('lockTime');
 
     if (storedToken === documentToken && storedLockTime) {
       const lockTime = Number(storedLockTime);
-      if (lockTime <= now) {
-        setLocked(true);
-        setSecondsLeft(0);
+
+      // Si ya pasó el tiempo de preview, bloqueamos y limpiamos storage
+      if (now >= lockTime) {
+        _setLocked(true);
+        _setSecondsLeft(0);
+        localStorage.removeItem('previewToken');
+        localStorage.removeItem('lockTime');
         return;
-      } else {
-        setLocked(false);
-        setSecondsLeft(Math.ceil((lockTime - now) / 1000));
       }
+
+      // Si aún no expira, calculamos segundos restantes
+      _setLocked(false);
+      _setSecondsLeft(Math.ceil((lockTime - now) / 1000));
     } else {
-      // Nuevo documento: reiniciar
-      const newLockTime = now + 10000;
+      // Nuevo documento o token distinto: reiniciamos contador
+      const newLockTime = now + LOCK_DURATION_MS;
       localStorage.setItem('previewToken', documentToken);
       localStorage.setItem('lockTime', newLockTime.toString());
-      setLocked(false);
-      setSecondsLeft(10);
+      _setLocked(false);
+      _setSecondsLeft(Math.ceil(LOCK_DURATION_MS / 1000));
     }
 
     const interval = setInterval(() => {
-      setSecondsLeft(prev => {
+      _setSecondsLeft(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          setLocked(true);
+          _setLocked(true);
           localStorage.removeItem('previewToken');
           localStorage.removeItem('lockTime');
           return 0;
