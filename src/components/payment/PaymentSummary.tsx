@@ -1,193 +1,317 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import {
-  ShieldCheckIcon,
-  DocumentTextIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  LockClosedIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
-import { defaultData } from "@/context/FormContext";
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FormData } from '@/types/formTypes';
 
-interface Props {
-  formData: typeof defaultData;
+interface PaymentSummaryProps {
+  formData: FormData;
   previewUrl: string | null;
+  documentToken: string;
 }
 
-export default function PaymentSummary({ formData, previewUrl }: Props) {
-  const navigate = useNavigate();
-  const [showSecurityNotice, setShowSecurityNotice] = useState(false);
-  const [lockShake, setLockShake] = useState(false);
-  const iframeRef = useRef<HTMLDivElement>(null);
+const PaymentSummary: React.FC<PaymentSummaryProps> = ({
+  formData,
+  previewUrl,
+  documentToken
+}) => {
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(10);
 
-  // si intentan scrollear en el preview, sacudir el candado
+  // Simula la carga del PDF
   useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      if (iframeRef.current?.contains(e.target as Node)) {
-        setLockShake(true);
-        setTimeout(() => setLockShake(false), 600);
-      }
-    };
-    window.addEventListener('wheel', onWheel, { passive: true });
-    return () => window.removeEventListener('wheel', onWheel);
-  }, []);
+    if (previewUrl) {
+      setIsLoading(true);
+      const timer = setTimeout(() => setIsLoading(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [previewUrl]);
 
-  // decide icono y título
-  const getDocumentData = () => {
-    switch (formData.tipoDocumento) {
-      case "Derecho de Petición":
-        return { title: "Derecho de Petición", icon: <DocumentTextIcon className="text-blue-600 h-5 w-5" /> };
-      case "Tutela":
-        return { title: "Acción de Tutela", icon: <ShieldCheckIcon className="text-purple-600 h-5 w-5" /> };
-      case "PQRS":
-        return { title: "PQRS", icon: <DocumentTextIcon className="text-orange-600 h-5 w-5" /> };
-      default:
-        return { title: "Documento Legal", icon: <DocumentTextIcon className="text-gray-600 h-5 w-5" /> };
+  // Control de bloqueo por token
+  useEffect(() => {
+    if (!previewUrl) return;
+    const now = Date.now();
+    const storedToken = localStorage.getItem('previewToken');
+    const storedLockTime = localStorage.getItem('lockTime');
+
+    if (storedToken === documentToken && storedLockTime) {
+      const lockTime = Number(storedLockTime);
+      if (lockTime <= now) {
+        setLocked(true);
+        setSecondsLeft(0);
+        return;
+      } else {
+        setLocked(false);
+        setSecondsLeft(Math.ceil((lockTime - now) / 1000));
+      }
+    } else {
+      // Nuevo documento: reiniciar
+      const newLockTime = now + 10000;
+      localStorage.setItem('previewToken', documentToken);
+      localStorage.setItem('lockTime', newLockTime.toString());
+      setLocked(false);
+      setSecondsLeft(10);
+    }
+
+    const interval = setInterval(() => {
+      setSecondsLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setLocked(true);
+          localStorage.removeItem('previewToken');
+          localStorage.removeItem('lockTime');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [previewUrl, documentToken]);
+
+  const getDocumentIcon = () => {
+    const tipo = formData.tipoDocumento.toLowerCase();
+    if (tipo.includes('contrato')) {
+      return (
+        <svg className="w-6 h-6 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1.4c0-2 4-3.1 6-3.1s6 1.1 6 3.1V19z" />
+        </svg>
+      );
+    } else if (tipo.includes('carta') || tipo.includes('solicitud')) {
+      return (
+        <svg className="w-6 h-6 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+        </svg>
+      );
+    } else if (tipo.includes('acta') || tipo.includes('certificado')) {
+      return (
+        <svg className="w-6 h-6 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-6 h-6 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+        </svg>
+      );
     }
   };
-  const { title, icon } = getDocumentData();
+
+  const toggleFullscreen = () => setIsPreviewFullscreen(!isPreviewFullscreen);
+  const closeFullscreen = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) setIsPreviewFullscreen(false);
+  };
 
   return (
-    <div className="mb-8 transition-all duration-300 ease-in-out">
-      {/* Cabecera */}
-      <div className="flex items-center mb-4 gap-2">
-        <h2 className="text-lg font-medium text-gray-800">Vista previa del documento</h2>
-        <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full animate-pulse">
-          Verificado
-        </div>
-      </div>
-
-      <div className="rounded-xl overflow-hidden bg-white shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-        {/* Header del documento */}
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
-          <div className="flex justify-between items-center gap-3">
-            <div className="flex items-center gap-2">
-              {icon}
-              <h3 className="font-bold text-xl text-gray-800">{title}</h3>
+    <div className="mb-10">
+      <motion.div 
+        className="flex flex-col md:flex-row gap-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* --- PREVIEW --- */}
+        <motion.div 
+          className="flex-1 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm relative"
+          whileHover={{ boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center">
+              {getDocumentIcon()}
+              <h3 className="ml-2 font-medium text-gray-800 truncate max-w-xs">
+                {formData.tipoDocumento}
+              </h3>
             </div>
-            <div className="flex items-center bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-xs font-medium">
-              <CheckCircleIcon className="h-4 w-4 mr-1" />
-              Verificado por IA
+            <div className="flex space-x-2">
+              <button 
+                className="p-1.5 rounded-md hover:bg-gray-200"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </button>
+              {showTooltip && (
+                <div className="absolute right-0 mt-12 w-48 p-2 bg-gray-800 text-xs text-white rounded shadow-lg z-10">
+                  Esta es una vista previa. Tras el pago, obtendrás la versión completa.
+                </div>
+              )}
+              <button 
+                className="p-1.5 rounded-md hover:bg-gray-200"
+                onClick={toggleFullscreen}
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
+                </svg>
+              </button>
             </div>
           </div>
-          {formData.nombre && (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
-              <div className="flex items-center text-gray-600">
-                <span className="font-medium mr-2">Solicitante:</span>
-                <span className="truncate">{formData.nombre}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <span className="font-medium mr-2">Dirigido a:</span>
-                <span className="truncate">{formData.entidad}</span>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Preview recortado + overlay */}
-        <div className="relative" ref={iframeRef}>
-          {previewUrl ? (
-            <div className="relative overflow-hidden h-[400px]">
-              <iframe
-                src={previewUrl}
-                title="Vista previa del documento"
-                referrerPolicy="no-referrer"
-                className="w-full h-[800px] pointer-events-none select-none"
-                sandbox="allow-same-origin allow-scripts"
-                onContextMenu={e => e.preventDefault()}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-              />
-              <div
-                className="absolute inset-0"
-                onContextMenu={e => e.preventDefault()}
-                onClick={e => e.preventDefault()}
-              />
+          <div className="aspect-[3/4] w-full bg-white relative">
+            {isLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
+                <svg className="animate-spin h-10 w-10 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                <p className="mt-3 text-sm text-gray-600">Cargando vista previa...</p>
+              </div>
+            )}
+            {!isLoading && previewUrl && (
+              <>
+                <iframe
+                  src={previewUrl}
+                  title="Vista previa del documento"
+                  className="w-full h-full select-none overflow-hidden pointer-events-none"
+                  
+                />
+                <div className="absolute inset-0 bg-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="rotate-45 opacity-25 text-3xl font-bold text-indigo-900">
+                    VISTA PREVIA
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </motion.div>
 
-              <motion.div
-                className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-white via-white/70 to-transparent backdrop-blur-sm flex flex-col items-center justify-end"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
-              >
-                <motion.div
-                  className="mb-6 text-center px-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1, duration: 0.6, ease: 'easeOut' }}
-                >
-                  <p className="text-gray-700 font-semibold mb-1">Contenido parcial mostrado</p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Para ver el documento completo, realiza el pago y desbloquéalo.
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowSecurityNotice(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center gap-2 transition-colors"
-                  >
-                    <motion.div
-                      animate={lockShake ? { rotate: [0, -10, 10, -10, 10, 0] } : {}}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <LockClosedIcon className="h-5 w-5" />
-                    </motion.div>
-                    Desbloquear Documento
-                  </motion.button>
-                </motion.div>
-              </motion.div>
+        {/* --- DETALLES --- */}
+        <motion.div 
+          className="md:w-1/3 bg-indigo-50 rounded-xl p-5 border border-indigo-100"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <h3 className="font-medium text-lg text-gray-800 mb-3">Detalles del documento</h3>
+          <div className="space-y-4 text-gray-700 text-sm">
+            {/* Tipo */}
+            <div>
+              <p className="text-xs text-gray-500">Tipo de documento</p>
+              <p className="font-medium">{formData.tipoDocumento}</p>
             </div>
-          ) : (
-            <div className="h-[300px] flex flex-col items-center justify-center p-6 bg-gray-50">
-              <ExclamationTriangleIcon className="h-12 w-12 text-amber-500 mb-4" />
-              <p className="text-gray-700 font-medium mb-1">Vista previa no disponible</p>
-              <p className="text-sm text-gray-500 text-center max-w-md">
-                La vista previa no se puede cargar.
+            {/* Solicitante */}
+            <div>
+              <p className="text-xs text-gray-500">Solicitante</p>
+              <p className="font-medium">
+                {formData.nombre} — C.C. {formData.identificacion}
               </p>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal de Confirmación de Pago */}
-      {showSecurityNotice && (
-        <motion.div
-          className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800">Acceso Restringido</h3>
-              <button
-                onClick={() => setShowSecurityNotice(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Para desbloquear el documento completo, serás redirigido al proceso de pago.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowSecurityNotice(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => navigate('/checkout')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Confirmar Pago
-              </button>
+            {/* Condicionales */}
+            {formData.entidad && (
+              <div>
+                <p className="text-xs text-gray-500">Entidad destinataria</p>
+                <p className="font-medium">{formData.entidad}</p>
+              </div>
+            )}
+            {formData.ciudad && (
+              <div>
+                <p className="text-xs text-gray-500">Ciudad</p>
+                <p className="font-medium">{formData.ciudad}</p>
+              </div>
+            )}
+            {formData.direccion && (
+              <div>
+                <p className="text-xs text-gray-500">Dirección remitente</p>
+                <p className="font-medium">{formData.direccion}</p>
+              </div>
+            )}
+            {formData.direccionEntidad && (
+              <div>
+                <p className="text-xs text-gray-500">Dirección de la entidad</p>
+                <p className="font-medium">{formData.direccionEntidad}</p>
+              </div>
+            )}
+            {formData.contacto?.email && (
+              <div>
+                <p className="text-xs text-gray-500">Contacto remitente</p>
+                <p className="font-medium">{formData.contacto.email}</p>
+              </div>
+            )}
+            {formData.contactoEntidad && (
+              <div>
+                <p className="text-xs text-gray-500">Contacto de la entidad</p>
+                <p className="font-medium">{formData.contactoEntidad}</p>
+              </div>
+            )}
+            {/* Estado listo */}
+            <div className="pt-2">
+              <div className="flex items-center text-green-600">
+                <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                <p className="font-medium">Documento listo para descargar</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Generado automáticamente por IA</p>
             </div>
           </div>
         </motion.div>
-      )}
+      </motion.div>
+
+      {/* --- FULLSCREEN MODAL --- */}
+      <AnimatePresence>
+        {isPreviewFullscreen && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeFullscreen}
+          >
+            <motion.div
+              className="bg-white rounded-lg overflow-hidden max-w-5xl w-full max-h-[90vh] flex flex-col relative"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center">
+                  {getDocumentIcon()}
+                  <h3 className="ml-2 font-medium text-gray-800 truncate">
+                    {formData.tipoDocumento}
+                  </h3>
+                </div>
+                <button
+                  className="p-1.5 rounded-md hover:bg-gray-200"
+                  onClick={toggleFullscreen}
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <div className="relative flex-1 overflow-hidden">
+                {previewUrl ? (
+                  <>
+                    <iframe
+                      src={previewUrl}
+                      
+                      className="w-full h-full select-none overflow-hidden pointer-events-none"
+                     
+                    />
+                    <div className="absolute inset-0 bg-transparent" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="rotate-45 opacity-10 text-6xl font-bold text-indigo-900">
+                        VISTA PREVIA
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                    <p className="text-gray-500">No se pudo cargar la vista previa</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
+};
+
+export default PaymentSummary;
