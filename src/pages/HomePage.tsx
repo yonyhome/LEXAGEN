@@ -9,6 +9,9 @@ import {
   QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import HowItWorks from '../components/home/HowItWorks';
+import Testimonials from '../components/home/Testimonials';
+
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -16,6 +19,10 @@ export default function HomePage() {
   
   const handleStart = () => {
     navigate('/wizard');
+  };
+
+  const handleLearnMore = () => {
+    navigate('/info');
   };
 
   // Controladores para animaciones de hover en tarjetas
@@ -164,7 +171,7 @@ export default function HomePage() {
             </motion.button>
 
             <motion.button 
-              onClick={() => setShowInfo(!showInfo)}
+              onClick={handleLearnMore}
               className="border-2 border-gray-300 bg-white text-gray-700 px-8 py-4 rounded-xl font-medium hover:border-indigo-300 hover:bg-gray-50 transition-all flex items-center justify-center"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -210,6 +217,12 @@ export default function HomePage() {
           </div>
         </motion.div>
       </motion.main>
+
+      {/* How It Works Section */}
+      <HowItWorks />
+
+      {/* Testimonials Section */}
+      <Testimonials />
 
       {/* Privacy Info Modal */}
       {showInfo && (

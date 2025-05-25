@@ -7,6 +7,7 @@ import TransactionResultPage from "@/pages/TransactionResultPage";
 import CompleteInfoPageWrapper from "@/pages/CompleteInfoPageWrapper"; // 👈 Nuevo import
 import TermsOfUsePage from "./pages/TermsOfUsePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import InfoPage from "./pages/InfoPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/complete-info" element={<CompleteInfoPageWrapper />} /> {/* 👈 Nueva ruta */}
       <Route path="/terms-of-use" element={<TermsOfUsePage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/info" element={<InfoPage />} />
       {/* Puedes agregar más rutas aquí */}
     </Routes>
   );

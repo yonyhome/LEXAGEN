@@ -1,26 +1,32 @@
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HomeIcon, ArrowLeftIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
-export default function Header() {
+const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const isHome = location.pathname === '/';
   const isWizard = location.pathname === '/wizard';
   const isPayment = location.pathname === '/payment';
+  const isInfo = location.pathname === '/info';
 
   const showHelp = isHome;
   const showBadge = isHome;
   const showBackToHome = isWizard || isPayment;
   const showBack = !isHome && !showBackToHome;
 
-  const handleBack = () => {
+  const handleBack = (): void => {
     if (showBackToHome) {
       navigate('/');
     } else {
       navigate(-1);
     }
+  };
+
+  const handleHelpClick = (): void => {
+    navigate('/info');
   };
 
   // Logo animation variants
@@ -68,8 +74,10 @@ export default function Header() {
         </motion.div>
 
         <div className="flex items-center gap-6">
+          {/* Botón de Ayuda - solo en home */}
           {showHelp && (
             <motion.button 
+              onClick={handleHelpClick}
               className="text-gray-600 hover:text-indigo-600 transition-colors duration-200 font-medium flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-indigo-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -78,7 +86,16 @@ export default function Header() {
               <span>Ayuda</span>
             </motion.button>
           )}
+
+          {/* Indicador de página actual - solo en página de info */}
+          {isInfo && (
+            <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg">
+              <QuestionMarkCircleIcon className="w-5 h-5" />
+              <span className="font-medium">Centro de Ayuda</span>
+            </div>
+          )}
           
+          {/* Botones de navegación hacia atrás */}
           {(showBackToHome || showBack) && (
             <motion.button
               onClick={handleBack}
@@ -98,4 +115,6 @@ export default function Header() {
       </div>
     </header>
   );
-}
+};
+
+export default Header;
